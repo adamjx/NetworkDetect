@@ -4,13 +4,11 @@
 #include "com_haier_networkdetect_networkdetect_NativeNetworkUtils.h"
 #define LOG "NETWORKDETECT"
 #ifdef DEBUG
-#if DEBUG>0
 #define LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG,__VA_ARGS__)
 #define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG,__VA_ARGS__)
 #else
 #define LOGI(...)
 #define LOGE(...)
-#endif
 #endif
 #define MAX_WAIT_TIME   3
 #define MAX_NO_PACKETS  1
@@ -22,11 +20,12 @@ struct sockaddr_in dest_addr,recv_addr;
 struct sockaddr_in dest_addr1,recv_addr1;
 int sockfd;
 int sockfd1;
+int is_thread_started = 0;
 pid_t pid;
 static volatile int isThreadExit = 0 ;
 static volatile int isIpCorrect = 0 ;
 static volatile int isIpCorrect1 = 0 ;
-int thread_num = 0;
+volatile int thread_num = 0;
 JavaVM * j_VM;
 jobject jObj;
 pthread_mutex_t mutex;
@@ -74,6 +73,8 @@ JNIEXPORT void JNICALL Java_com_haier_networkdetect_networkdetect_NativeNetworkU
 }
 JNIEXPORT void JNICALL Java_com_haier_networkdetect_networkdetect_NativeNetworkUtils_networkDetectThreadStart(JNIEnv *env, jobject jcls)
 {
+    if(is_thread_started)
+        return;
     isThreadExit = 0;
     pthread_t threadId;
     pthread_t threadId1;
@@ -85,7 +86,7 @@ JNIEXPORT void JNICALL Java_com_haier_networkdetect_networkdetect_NativeNetworkU
     {
         thread_num++;
     }
-    if(pthread_create(&threadId,NULL,thread_network_exec,(void*)&b)!=0)
+    if(pthread_create(&threadId1,NULL,thread_network_exec,(void*)&b)!=0)
     {
         LOGE("native thread2 start failed!");
     }
@@ -93,6 +94,7 @@ JNIEXPORT void JNICALL Java_com_haier_networkdetect_networkdetect_NativeNetworkU
     {
         thread_num++;
     }
+    is_thread_started = 1;
 }
 JNIEXPORT void JNICALL Java_com_haier_networkdetect_networkdetect_NativeNetworkUtils_networkDetectThreadStop(JNIEnv *env, jobject jcls)
 {
